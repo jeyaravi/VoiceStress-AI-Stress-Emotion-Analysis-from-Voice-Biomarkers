@@ -1,0 +1,108 @@
+# ======================================
+# VoiceStress AI
+# Stress Detection from Voice Biomarkers
+# ======================================
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# ------------------------------
+# STEP 1: CREATE SYNTHETIC VOICE DATA
+# ------------------------------
+np.random.seed(42)
+data_size = 300
+
+data = {
+    "Pitch": np.random.uniform(80, 300, data_size),          # Voice pitch (Hz)
+    "Energy": np.random.uniform(0.1, 1.0, data_size),        # Loudness
+    "Jitter": np.random.uniform(0.0, 0.05, data_size),       # Voice instability
+    "Shimmer": np.random.uniform(0.0, 0.1, data_size),       # Amplitude variation
+    "Speech_Rate": np.random.uniform(2, 6, data_size)        # Words/sec
+}
+
+df = pd.DataFrame(data)
+
+# ------------------------------
+# STEP 2: TARGET VARIABLE (STRESS LEVEL)
+# ------------------------------
+# 1 → Stressed, 0 → Not Stressed
+df["Stress"] = (
+    (df["Pitch"] > 200).astype(int) |
+    (df["Energy"] > 0.7).astype(int) |
+    (df["Jitter"] > 0.03).astype(int)
+)
+
+# ------------------------------
+# STEP 3: FEATURES & TARGET
+# ------------------------------
+X = df.drop("Stress", axis=1)
+y = df["Stress"]
+
+# ------------------------------
+# STEP 4: TRAIN-TEST SPLIT
+# ------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# ------------------------------
+# STEP 5: MODEL TRAINING
+# ------------------------------
+model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# ------------------------------
+# STEP 6: PREDICTION
+# ------------------------------
+y_pred = model.predict(X_test)
+
+# ------------------------------
+# STEP 7: EVALUATION
+# ------------------------------
+accuracy = accuracy_score(y_test, y_pred)
+
+print("🎯 Model Performance")
+print("---------------------")
+print("Accuracy :", round(accuracy * 100, 2), "%")
+
+print("\n📊 Classification Report")
+print(classification_report(y_test, y_pred))
+
+# ------------------------------
+# STEP 8: CONFUSION MATRIX
+# ------------------------------
+cm = confusion_matrix(y_test, y_pred)
+
+plt.figure(figsize=(5,4))
+plt.imshow(cm, cmap="Blues")
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.colorbar()
+plt.show()
+
+# ------------------------------
+# STEP 9: SAMPLE PREDICTION
+# ------------------------------
+sample_voice = pd.DataFrame({
+    "Pitch": [240],
+    "Energy": [0.8],
+    "Jitter": [0.04],
+    "Shimmer": [0.06],
+    "Speech_Rate": [5]
+})
+
+prediction = model.predict(sample_voice)
+
+print("\n🔮 Sample Prediction")
+print("---------------------")
+print("Stress Detected :" , "YES" if prediction[0] == 1 else "NO")
